@@ -234,10 +234,70 @@ IMPORTANT RULES:
 - Extract patient_info from the report header.
 """
 
+PROMPT_GYNO = """
+You are an expert Gynecologist and Obstetrician AI. Analyze the uploaded Gynecology, Maternity, or Pregnancy ultrasound/blood report.
+Extract all relevant information and map it into the requested JSON schema.
+
+JSON FORMAT:
+{
+  "report_type": "gyno_report",
+  "patient_info": {
+    "name": "string",
+    "age": "string",
+    "gender": "string",
+    "patient_id": "string",
+    "doctor_name": "string",
+    "report_date": "string",
+    "gestational_age": "string (e.g. '24 Weeks 3 Days' if available)",
+    "expected_delivery_date_edd": "string (if available)",
+    "gravida_para": "string (e.g. 'G2 P1' if available)"
+  },
+  "gyno_subtype": "pregnancy_ultrasound or hormonal_profile or general_gyno",
+  "fetal_heart_rate": "string (e.g. '140 bpm' if available)",
+  "gyno_metrics": [
+    {
+      "metric": "Metric name (e.g. Biparietal Diameter, Femur Length, FSH)",
+      "value": "Numeric or string value",
+      "unit": "Unit if present",
+      "reference_range": "Normal range if present",
+      "status": "Normal, High, or Low"
+    }
+  ],
+  "findings": [
+    "Clear sentence about specific findings (e.g., Placenta is anterior, AFI is normal)."
+  ],
+  "disease_explanations": [
+    {
+      "disease_name": "Specific condition or observation (e.g. Gestational Diabetes, Placenta Previa, Healthy Fetal Growth)",
+      "severity": "Normal / Mild / Moderate / Severe",
+      "status": "Normal or Abnormal",
+      "simple_explanation": "What it means\\n[1 sentence]\\n\\nCommon causes\\n[1 sentence]\\n\\nWhat to do\\n[1 sentence]",
+      "treatment": "Specific action, monitoring, or treatment plan.",
+      "urgency": "Routine / Soon / Urgent"
+    }
+  ],
+  "health_score": 90,
+  "summary": "1. Overall summary.\\n2. Key findings.\\n3. Recommendations.",
+  "recommendations": [
+    "Specific recommendation 1",
+    "Specific recommendation 2"
+  ],
+  "follow_up_timeline": [
+    {"condition": "Anomaly Scan", "timeline": "4 Weeks"}
+  ]
+}
+
+IMPORTANT RULES:
+- gyno_metrics: Include every maternal and fetal metric (BPD, HC, AC, FL, AFI, EFW, hormone levels).
+- disease_explanations: Create one entry for every significant finding or condition. Follow the precise format: 'What it means\\n...\\n\\nCommon causes\\n...\\n\\nWhat to do\\n...'. 
+- health_score: Provide a score out of 100 based on fetal and maternal health markers.
+"""
+
 PROMPT_ROUTER = {
     "blood_test": PROMPT_BLOOD,
     "eye_report": PROMPT_EYE,
-    "ecg_heart": PROMPT_ECG
+    "ecg_heart": PROMPT_ECG,
+    "gyno_report": PROMPT_GYNO
 }
 
 
@@ -422,6 +482,22 @@ def calculate_ecg_health_score(result: dict) -> int:
 
     return max(40, min(100, int(score)))
 
+def calculate_gyno_health_score(result: dict) -> int:
+    score = 100
+    metrics = result.get('gyno_metrics') or []
+    for m in metrics:
+        status = str(m.get('status', '')).lower()
+        if status in ['high', 'low', 'abnormal']:
+            score -= 4
+            
+    findings = result.get('disease_explanations') or []
+    for f in findings:
+        status = str(f.get('status', '')).lower()
+        if status == 'abnormal':
+            score -= 10
+            
+    return max(40, min(100, int(score)))
+
 # -- Report Classification Router --
 
 CLASSIFICATION_PROMPT = """
@@ -445,6 +521,7 @@ Return ONLY a JSON object in this exact format:
 {
   "report_type": "blood_test"
 }
+Hint: If the report mentions "Gestational", "EDD", "Fetus", "Ovary", "Ultrasound", or "Pregnancy", strongly consider classifying it as "gyno_report".
 If you are unsure or the confidence is low, return "unsupported".
 """
 
@@ -511,6 +588,10 @@ async def analyze_pdf(file_bytes: bytes, report_type: str = "blood_test"):
         deterministic_score = calculate_ecg_health_score(result)
         result['health_score'] = deterministic_score
         print(f"[OK] Deterministic ECG score: {deterministic_score}/100")
+    elif report_type == "gyno_report":
+        deterministic_score = calculate_gyno_health_score(result)
+        result['health_score'] = deterministic_score
+        print(f"[OK] Deterministic Gyno score: {deterministic_score}/100")
     else:
         # Fallback for future reports before they have custom scoring
         result['health_score'] = result.get('health_score', 80)

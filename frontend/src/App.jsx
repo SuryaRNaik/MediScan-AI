@@ -10,7 +10,7 @@ import {
 import {
   Upload, Activity, AlertCircle, CheckCircle2, ShieldCheck, Brain,
   TrendingUp, RotateCcw, Zap, Heart, Droplets, Pill, FileDown,
-  User, Calendar, UserCheck, Eye, HeartPulse, BookOpen, Stethoscope, Search, Bell
+  User, Calendar, UserCheck, Eye, HeartPulse, BookOpen, Stethoscope, Search, Bell, Baby
 } from 'lucide-react';
 
 import EyeAnatomy from './components/EyeAnatomy';
@@ -1525,6 +1525,275 @@ function App() {
   };
 
 
+  const renderGynoReport = () => {
+    const score = data.health_score || 0;
+    const scoreText = score >= 85 ? 'Normal' : score >= 70 ? 'Needs Attention' : 'Higher Risk — Review Findings';
+    const scoreColor = score >= 85 ? '#22c55e' : score >= 70 ? '#eab308' : '#ef4444';
+
+    const pInfo = data.patient_info || {};
+    const gynoMetrics = data.gyno_metrics || [];
+    let findings = data.findings || [];
+    
+    // Front-end heuristic to keep findings short and prioritize abnormal
+    const abnormalFindings = findings.filter(f => f.toLowerCase().includes('abnormal') || f.toLowerCase().includes('elevated') || f.toLowerCase().includes('low ') || f.toLowerCase().includes('high ') || f.toLowerCase().includes('previa') || f.toLowerCase().includes('oligohydramnios') || f.toLowerCase().includes('polyhydramnios') || f.toLowerCase().includes('resistance'));
+    const normalFindings = findings.filter(f => !abnormalFindings.includes(f));
+    
+    let displayFindings = [];
+    if (abnormalFindings.length > 0) {
+      displayFindings = [...abnormalFindings];
+      if (normalFindings.length > 0) {
+        displayFindings.push("Other structural findings and growth parameters appear normal for gestational age.");
+      }
+    } else {
+      if (normalFindings.length > 3) {
+        displayFindings = normalFindings.slice(0, 3);
+        displayFindings.push("Other structural findings and growth parameters appear normal for gestational age.");
+      } else {
+        displayFindings = normalFindings;
+      }
+    }
+    
+    if (displayFindings.length === 0 && findings.length > 0) {
+        displayFindings = findings;
+    }
+
+    return (
+      <div className="relative group space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 z-0">
+        
+        {/* ── BACKGROUND GLASSY WOMB/FOETUS UI ── */}
+        <div className="absolute right-0 top-0 w-full h-[800px] overflow-hidden pointer-events-none -z-10">
+          <div className="absolute right-[-10%] top-[-5%] md:right-[-5%] md:top-0 w-[500px] h-[500px] lg:w-[700px] lg:h-[700px] opacity-40 transition-all duration-[3000ms] ease-out group-hover:scale-[1.05] group-hover:-translate-y-8 group-hover:-rotate-3">
+            {/* Soft glowing aura */}
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-300 via-rose-200 to-purple-300 rounded-full blur-[80px] opacity-50" />
+            
+            {/* Womb glass container */}
+            <div className="absolute inset-10 bg-white/20 backdrop-blur-3xl border border-white/50 rounded-[45%_55%_60%_40%/50%_45%_55%_50%] shadow-[0_8px_32px_0_rgba(255,182,193,0.2)] flex items-center justify-center overflow-hidden transition-all duration-[4000ms] ease-in-out group-hover:rounded-[50%_50%_55%_45%/45%_50%_50%_55%]">
+              
+              {/* Foetal abstract curve */}
+              <div className="relative w-48 h-56 transition-transform duration-[3000ms] group-hover:scale-105 group-hover:rotate-6">
+                {/* Head */}
+                <div className="absolute top-4 left-6 w-20 h-20 bg-gradient-to-br from-rose-300/40 to-pink-400/40 rounded-full blur-md" />
+                <div className="absolute top-6 left-8 w-16 h-16 bg-white/40 border border-white/60 rounded-full backdrop-blur-md shadow-inner" />
+                
+                {/* Body curve */}
+                <div className="absolute top-20 left-10 w-28 h-32 bg-gradient-to-br from-purple-300/40 to-pink-300/40 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] blur-md" />
+                <div className="absolute top-22 left-12 w-24 h-28 bg-white/30 border border-white/50 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] backdrop-blur-md" />
+                
+                {/* Abstract umbilical cord line */}
+                <svg className="absolute top-1/2 -right-12 w-32 h-32 overflow-visible opacity-60" viewBox="0 0 100 100">
+                  <path d="M0,50 C30,80 70,20 100,50" fill="none" stroke="url(#cord-grad)" strokeWidth="3" strokeLinecap="round" className="animate-pulse" style={{ animationDuration: '3s' }} />
+                  <defs>
+                    <linearGradient id="cord-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f472b6" />
+                      <stop offset="100%" stopColor="#c084fc" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+
+                {/* Tiny heartbeat glow */}
+                <div className="absolute top-28 left-20 w-3 h-3 bg-rose-400/80 rounded-full blur-[2px] animate-ping" style={{ animationDuration: '1.5s' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 1. PREGNANCY OVERVIEW ── */}
+        <div className="bg-gradient-to-r from-pink-50 via-rose-50/50 to-purple-50 rounded-2xl border border-pink-100 p-6 md:p-8 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Baby className="text-pink-500" size={24} />
+            Pregnancy Overview
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Health Score */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Health Score</span>
+              <span className="text-4xl font-black mb-1" style={{ color: scoreColor }}>{score}</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded-md" style={{ backgroundColor: `${scoreColor}15`, color: scoreColor }}>
+                {scoreText}
+              </span>
+            </div>
+
+            {/* Gestational Age */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white shadow-sm flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="text-pink-400" size={16} />
+                <span className="text-sm font-bold text-gray-700">Pregnancy Progress</span>
+              </div>
+              <span className="text-xl font-black text-gray-900 leading-tight mb-1">{pInfo.gestational_age || '—'}</span>
+              <span className="text-xs text-gray-500">How far along the pregnancy is</span>
+            </div>
+
+            {/* EDD */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white shadow-sm flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="text-purple-400" size={16} />
+                <span className="text-sm font-bold text-gray-700">Expected Delivery</span>
+              </div>
+              <span className="text-xl font-black text-gray-900 leading-tight mb-1">{pInfo.expected_delivery_date_edd || '—'}</span>
+              <span className="text-xs text-gray-500">Estimated due date</span>
+            </div>
+
+            {/* Fetal Heart Rate */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white shadow-sm flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <HeartPulse className="text-rose-400" size={16} />
+                <span className="text-sm font-bold text-gray-700">Baby's Heartbeat</span>
+              </div>
+              <span className="text-xl font-black text-gray-900 leading-tight mb-1">{data.fetal_heart_rate || '—'}</span>
+              <span className="text-xs text-gray-500">Fetal heart rate</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. PATIENT DETAILS ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Patient Details</h3>
+            <p className="text-lg font-black text-gray-900">{pInfo.name || 'Unknown Patient'}</p>
+            <p className="text-sm text-gray-600">{pInfo.age ? `${pInfo.age} Years · ` : ''}{pInfo.gender || ''}</p>
+          </div>
+          <div className="text-left md:text-right text-sm text-gray-600 space-y-0.5">
+            <p><span className="font-semibold text-gray-900">Patient ID:</span> {pInfo.patient_id || '—'}</p>
+            <p><span className="font-semibold text-gray-900">Doctor:</span> {pInfo.doctor_name || '—'}</p>
+            <p><span className="font-semibold text-gray-900">Report Date:</span> {pInfo.report_date || '—'}</p>
+          </div>
+        </div>
+
+        {/* ── 3. ULTRASOUND & PREGNANCY METRICS (GRID, NO SCROLL) ── */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="text-pink-500" size={20} />
+            Ultrasound & Pregnancy Metrics
+          </h3>
+          {gynoMetrics.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {gynoMetrics.map((m, idx) => {
+                const st = (m.status || 'normal').toLowerCase();
+                const isAbnormal = st.includes('abnormal') || st === 'high' || st === 'low';
+                const isBorderline = st.includes('borderline') || st.includes('attention');
+                
+                let cardStyle = "bg-white border-gray-100";
+                let dotColor = "bg-green-500";
+                let statusTextColor = "text-green-700";
+                let statusBgColor = "bg-green-50";
+
+                if (isAbnormal) {
+                  cardStyle = "bg-red-50/30 border-red-100";
+                  dotColor = "bg-red-500";
+                  statusTextColor = "text-red-700";
+                  statusBgColor = "bg-red-50";
+                } else if (isBorderline) {
+                  cardStyle = "bg-amber-50/30 border-amber-100";
+                  dotColor = "bg-amber-500";
+                  statusTextColor = "text-amber-700";
+                  statusBgColor = "bg-amber-50";
+                }
+
+                return (
+                  <div key={idx} className={`p-4 rounded-xl border shadow-sm flex flex-col ${cardStyle}`}>
+                    <span className="text-sm font-semibold text-gray-700 mb-1">{m.metric}</span>
+                    <div className="mt-auto">
+                      <span className="text-xl font-black text-gray-900">
+                        {m.value} <span className="text-sm font-medium text-gray-500">{m.unit}</span>
+                      </span>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${statusTextColor}`}>
+                          {m.status || 'NORMAL'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl p-6 text-center text-gray-500 text-sm border border-gray-100">
+              No specific metrics extracted from report.
+            </div>
+          )}
+        </div>
+
+        {/* ── 4. CLINICAL FINDINGS ── */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Stethoscope className="text-purple-500" size={20} />
+            Clinical Findings
+          </h3>
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            {displayFindings.length > 0 ? (
+              <ul className="space-y-3">
+                {displayFindings.map((f, i) => {
+                  const isWarning = f.toLowerCase().includes('abnormal') || f.toLowerCase().includes('elevated') || f.toLowerCase().includes('resistance') || f.toLowerCase().includes('previa') || f.toLowerCase().includes('oligohydramnios') || f.toLowerCase().includes('polyhydramnios');
+                  return (
+                    <li key={i} className="flex gap-3 items-start">
+                      {isWarning ? (
+                        <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                      ) : (
+                        <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
+                      )}
+                      <span className={`text-sm ${isWarning ? 'text-red-900 font-medium' : 'text-gray-700'}`}>{f}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No specific clinical findings reported.</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── 5. WHAT THIS MEANS (SUMMARY) ── */}
+        {data.summary && (
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <BookOpen className="text-blue-500" size={20} />
+              What This Means
+            </h3>
+            <div className="bg-blue-50/50 rounded-2xl border border-blue-100 p-6 shadow-sm">
+              <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{data.summary}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── 6. RECOMMENDED NEXT STEPS ── */}
+        {(data.recommendations?.length > 0 || data.follow_up_timeline?.length > 0) && (
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <ShieldCheck className="text-teal-500" size={20} />
+              Recommended Next Steps
+            </h3>
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              {data.recommendations?.length > 0 && (
+                <ul className="list-disc pl-5 space-y-2 mb-4">
+                  {data.recommendations.map((rec, i) => (
+                    <li key={i} className="text-sm text-gray-700">{rec}</li>
+                  ))}
+                </ul>
+              )}
+              {data.follow_up_timeline?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Timeline</h4>
+                  <div className="space-y-2">
+                    {data.follow_up_timeline.map((item, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <span className="font-medium text-gray-800">{item.condition}</span>
+                        <span className="bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-semibold">{item.timeline}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
+    );
+  };
+
+
   const renderUnsupportedReport = () => (
     <div className="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
       <AlertCircle className="text-[#B8B8B8] mx-auto mb-3" size={32} />
@@ -1537,6 +1806,7 @@ function App() {
     blood_test: renderBloodReport,
     eye_report: renderEyeReport,
     ecg_heart: renderECGReport,
+    gyno_report: renderGynoReport,
   };
   const ReportView = reportComponents[data?.report_type] || renderUnsupportedReport;
 

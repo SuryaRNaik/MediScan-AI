@@ -47,7 +47,7 @@ async def analyze_report(file: UploadFile = File(...)):
         report_type = await classify_report(content)
         print(f"[OK] Report classified as: {report_type}")
         
-        if report_type not in ["blood_test", "eye_report", "ecg_heart"]:
+        if report_type not in ["blood_test", "eye_report", "ecg_heart", "gyno_report"]:
             type_names = {
                 "ecg_heart": "ECG Report",
                 "bone_density": "Bone Density Report",
