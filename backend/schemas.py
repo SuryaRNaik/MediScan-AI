@@ -9,6 +9,11 @@ class PatientInfo(BaseModel):
     doctor_name: Optional[str] = None
     report_date: Optional[str] = None
 
+class GynoPatientInfo(PatientInfo):
+    gestational_age: Optional[str] = None
+    expected_delivery_date_edd: Optional[str] = None
+    gravida_para: Optional[str] = None
+
 class Biomarker(BaseModel):
     name: str
     value: Union[float, str]
@@ -34,6 +39,13 @@ class EyeMetric(BaseModel):
     status: Optional[str] = None  # Normal, High, Low
 
 class EcgMetric(BaseModel):
+    metric: str
+    value: Union[float, str]
+    unit: Optional[str] = None
+    reference_range: Optional[str] = None
+    status: Optional[str] = None  # Normal, High, Low
+
+class GynoMetric(BaseModel):
     metric: str
     value: Union[float, str]
     unit: Optional[str] = None
@@ -95,5 +107,14 @@ class ECGReportSchema(BaseMedicalReport):
     ecg_metrics: Optional[List[EcgMetric]] = Field(default_factory=list)
     simple_summary: Optional[str] = None
 
+class GynoReportSchema(BaseMedicalReport):
+    report_type: Literal["gyno_report"] = "gyno_report"
+    patient_info: Optional[GynoPatientInfo] = None
+    fetal_heart_rate: Optional[str] = None
+    gyno_subtype: Optional[str] = None
+    findings: List[str] = Field(default_factory=list)
+    gyno_metrics: Optional[List[GynoMetric]] = Field(default_factory=list)
+    follow_up_timeline: List[FollowUpItem] = Field(default_factory=list)
+
 # ── Dynamic Union ──────────────────────────────────────────────────────────────
-MedicalAnalysis = Union[BloodReportSchema, EyeReportSchema, ECGReportSchema]
+MedicalAnalysis = Union[BloodReportSchema, EyeReportSchema, ECGReportSchema, GynoReportSchema]
